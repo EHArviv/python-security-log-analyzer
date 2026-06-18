@@ -1,0 +1,10 @@
+2026-06-17 08:12:04 INFO User israel logged in successfully from 192.168.1.10
+2026-06-17 08:14:22 WARNING Disk usage is above 80% on server WEB-01
+2026-06-17 08:17:45 ERROR Failed login attempt for user admin from 10.0.0.45
+2026-06-17 08:18:01 ERROR Failed login attempt for user admin from 10.0.0.45
+2026-06-17 08:20:33 INFO Backup job started
+2026-06-17 08:23:10 ERROR Service nginx is not responding on server WEB-01
+2026-06-17 08:26:19 INFO Backup job completed successfully
+2026-06-17 08:29:50 WARNING CPU usage is above 90% on server APP-02
+2026-06-17 08:31:11 ERROR Failed login attempt for user guest from 172.16.5.20
+2026-06-17 08:35:00 INFO User tal logged out
