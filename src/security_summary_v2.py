@@ -3,6 +3,7 @@ import re
 import csv
 import sys
 import json
+from datetime import datetime, timezone
 from collections import defaultdict, Counter
 
 
@@ -114,9 +115,15 @@ def create_csv_report(report_rows, csv_report_file):
 
 def create_json_report(log_file, report_rows, all_ips, json_report_file):
     data = {
+        "tool_name": "Python Security Log Analyzer",
+        "report_type": "security_log_analysis",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
         "log_file_analyzed": str(log_file),
-        "total_unique_ips": len(set(all_ips)),
-        "total_ip_appearances": len(all_ips),
+        "summary": {
+            "total_unique_ips": len(set(all_ips)),
+            "total_ip_appearances": len(all_ips),
+            "total_events": len(report_rows),
+        },
         "events": report_rows,
     }
 
@@ -138,6 +145,65 @@ def create_blocklist(events, blocklist_file):
     return blocked_ips
 
 
+def create_iocs_file(blocked_ips, iocs_file):
+    with iocs_file.open("w", encoding="utf-8") as file:
+        for ip in blocked_ips:
+            file.write(f"{ip}\n")
+
+
+def create_alerts_json(events, alerts_file):
+    alerts = []
+
+    for (ip, event_type), count in events.items():
+        severity = detect_severity(event_type, count)
+
+        if event_type == "Failed login" and count >= FAILED_LOGIN_BLOCK_THRESHOLD:
+            alerts.append(
+                {
+                    "alert_name": "Repeated Failed Login",
+                    "severity": severity,
+                    "source_ip": ip,
+                    "event_type": event_type,
+                    "count": count,
+                    "generated_at": datetime.now(timezone.utc).isoformat(),
+                    "recommendation": "Review authentication logs and consider blocking or monitoring this IP.",
+                }
+            )
+
+        elif event_type in ["Service down", "High disk usage", "High CPU usage"]:
+            alerts.append(
+                {
+                    "alert_name": event_type,
+                    "severity": severity,
+                    "source_ip": ip,
+                    "event_type": event_type,
+                    "count": count,
+                    "generated_at": datetime.now(timezone.utc).isoformat(),
+                    "recommendation": "Review system health and investigate the affected service or resource.",
+                }
+            )
+
+    with alerts_file.open("w", encoding="utf-8") as file:
+        json.dump(alerts, file, indent=2)
+
+    return alerts
+
+
+def create_events_ndjson(report_rows, ndjson_file):
+    with ndjson_file.open("w", encoding="utf-8") as file:
+        for row in report_rows:
+            event = {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "event_type": row["event_type"],
+                "source_ip": row["ip_address"],
+                "count": row["count"],
+                "severity": row["severity"],
+                "message": f"{row['event_type']} detected for {row['ip_address']} {row['count']} time(s).",
+            }
+
+            file.write(json.dumps(event) + "\n")
+
+
 def create_summary_report(
     log_file,
     report_rows,
@@ -146,6 +212,7 @@ def create_summary_report(
     most_suspicious_ip,
     suspicious_reason,
     blocked_ips,
+    alerts,
 ):
     severity_counter = Counter(row["severity"] for row in report_rows)
 
@@ -155,6 +222,7 @@ def create_summary_report(
         file.write(f"Log file analyzed: {log_file}\n")
         file.write(f"Total unique IPs found: {len(set(all_ips))}\n")
         file.write(f"Total IP appearances: {len(all_ips)}\n")
+        file.write(f"Total alerts generated: {len(alerts)}\n")
         file.write("\n")
 
         file.write("Severity Summary\n")
@@ -171,14 +239,14 @@ def create_summary_report(
         file.write(f"Reason: {suspicious_reason}\n")
         file.write("\n")
 
-        file.write("Blocklist\n")
-        file.write("---------\n")
+        file.write("Blocklist / IOCs\n")
+        file.write("----------------\n")
 
         if blocked_ips:
             for ip in blocked_ips:
                 file.write(f"{ip}\n")
         else:
-            file.write("No IPs added to blocklist\n")
+            file.write("No IPs added to blocklist or IOC list\n")
 
         file.write("\n")
         file.write("Detailed Events\n")
@@ -201,6 +269,9 @@ def create_reports(log_file, events, all_ips):
     txt_report_file = reports_folder / "security_summary_report.txt"
     json_report_file = reports_folder / "security_report.json"
     blocklist_file = reports_folder / "blocklist.txt"
+    iocs_file = reports_folder / "iocs.txt"
+    alerts_file = reports_folder / "alerts.json"
+    ndjson_file = reports_folder / "events.ndjson"
 
     report_rows = build_report_rows(events)
     most_suspicious_ip, suspicious_reason = find_most_suspicious_ip(events)
@@ -208,6 +279,9 @@ def create_reports(log_file, events, all_ips):
     create_csv_report(report_rows, csv_report_file)
     create_json_report(log_file, report_rows, all_ips, json_report_file)
     blocked_ips = create_blocklist(events, blocklist_file)
+    create_iocs_file(blocked_ips, iocs_file)
+    alerts = create_alerts_json(events, alerts_file)
+    create_events_ndjson(report_rows, ndjson_file)
 
     create_summary_report(
         log_file=log_file,
@@ -217,13 +291,17 @@ def create_reports(log_file, events, all_ips):
         most_suspicious_ip=most_suspicious_ip,
         suspicious_reason=suspicious_reason,
         blocked_ips=blocked_ips,
+        alerts=alerts,
     )
 
     print("Reports created successfully!")
     print(f"CSV report: {csv_report_file}")
     print(f"TXT summary report: {txt_report_file}")
     print(f"JSON report: {json_report_file}")
+    print(f"Alerts JSON: {alerts_file}")
+    print(f"NDJSON events: {ndjson_file}")
     print(f"Blocklist: {blocklist_file}")
+    print(f"IOCs: {iocs_file}")
 
 
 def main():
