@@ -1,0 +1,28 @@
+name: Python Check
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  python-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Check Python syntax
+        run: |
+          python -m py_compile src/security_summary.py
+          python -m py_compile src/security_summary_v2.py
+
+      - name: Run log analyzer V2
+        run: python src/security_summary_v2.py sample_logs/system.log
