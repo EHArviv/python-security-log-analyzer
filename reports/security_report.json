@@ -1,0 +1,25 @@
+{
+  "log_file_analyzed": "sample_logs\\system.log",
+  "total_unique_ips": 3,
+  "total_ip_appearances": 4,
+  "events": [
+    {
+      "ip_address": "192.168.1.10",
+      "count": 1,
+      "event_type": "Login success",
+      "severity": "Info"
+    },
+    {
+      "ip_address": "10.0.0.45",
+      "count": 2,
+      "event_type": "Failed login",
+      "severity": "Medium"
+    },
+    {
+      "ip_address": "172.16.5.20",
+      "count": 1,
+      "event_type": "Failed login",
+      "severity": "Low"
+    }
+  ]
+}
