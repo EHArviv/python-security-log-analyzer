@@ -17,11 +17,15 @@ A Python security automation tool that analyzes log files, extracts IP addresses
 * Create a suspicious IP blocklist
 * Create an IOC list
 * Run from the command line
+* Includes GitHub Actions workflow
 
 ## Project Structure
 
 ```text
 python-security-log-analyzer/
+├── .github/
+│   └── workflows/
+│       └── python-check.yml
 ├── src/
 │   ├── security_summary.py
 │   └── security_summary_v2.py
@@ -249,6 +253,22 @@ This project generates multiple output formats commonly used in security operati
 * `blocklist.txt` for suspicious IP blocking workflows
 * `iocs.txt` for Indicators of Compromise
 
+## GitHub Actions
+
+This project includes a GitHub Actions workflow that runs automated checks on every push and pull request.
+
+The workflow:
+
+* Checks Python syntax
+* Runs the V2 log analyzer against a sample log file
+* Verifies that the tool can generate reports successfully
+
+Workflow file:
+
+```text
+.github/workflows/python-check.yml
+```
+
 ## Requirements
 
 No external dependencies are required.
@@ -279,6 +299,7 @@ This project uses only Python standard library modules:
 * Command-line arguments
 * Basic security event analysis
 * SOC/SIEM-friendly output formats
+* GitHub Actions
 * IT/Security automation workflow
 
 ## Example Resume Description
